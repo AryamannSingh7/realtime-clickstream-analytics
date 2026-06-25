@@ -1,0 +1,115 @@
+# Real-Time Clickstream Analytics — local stack.
+# Everything here is free / open-source. Bring it up with:  docker compose up -d
+#
+# M0 scope: Kafka (KRaft, no ZooKeeper), Schema Registry, ClickHouse, and a one-shot
+# topic-creation job. Stream processing, Kafka Connect sink, API and dashboard are
+# added in later milestones.
+
+name: clickstream-analytics
+
+services:
+  kafka:
+    image: confluentinc/cp-kafka:7.8.0
+    container_name: kafka
+    ports:
+      - "9092:9092"   # host access  -> localhost:9092
+    environment:
+      # --- KRaft (combined broker + controller, single node) ---
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      CLUSTER_ID: MkU3OEVBNTcwNTJENDM2Qk
+      # --- Listeners: internal (containers) + host + controller ---
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:29092,CONTROLLER://0.0.0.0:9093,PLAINTEXT_HOST://0.0.0.0:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      # --- Single-node replication settings ---
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
+    healthcheck:
+      test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:9092"]
+      interval: 10s
+      timeout: 10s
+      retries: 12
+    volumes:
+      - kafka-data:/var/lib/kafka/data
+
+  schema-registry:
+    image: confluentinc/cp-schema-registry:7.8.0
+    container_name: schema-registry
+    depends_on:
+      kafka:
+        condition: service_healthy
+    ports:
+      - "8081:8081"
+    environment:
+      SCHEMA_REGISTRY_HOST_NAME: schema-registry
+      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: PLAINTEXT://kafka:29092
+      SCHEMA_REGISTRY_LISTENERS: http://0.0.0.0:8081
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/subjects"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  clickhouse:
+    image: clickhouse/clickhouse-server:24.8
+    container_name: clickhouse
+    ports:
+      - "8123:8123"   # HTTP interface
+      - "9000:9000"   # native protocol
+    environment:
+      # The official image disables network access for 'default' unless credentials are
+      # set. We provision a dedicated app user (local dev creds; not for production).
+      CLICKHOUSE_USER: clickstream
+      CLICKHOUSE_PASSWORD: clickstream
+      CLICKHOUSE_DB: analytics
+      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: 1
+    ulimits:
+      nofile:
+        soft: 262144
+        hard: 262144
+    volumes:
+      - ./infra/clickhouse/init:/docker-entrypoint-initdb.d:ro
+      - clickhouse-data:/var/lib/clickhouse
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8123/ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  # One-shot: creates all pipeline topics, then exits.
+  init-kafka:
+    image: confluentinc/cp-kafka:7.8.0
+    container_name: init-kafka
+    depends_on:
+      kafka:
+        condition: service_healthy
+    entrypoint: ["/bin/bash", "-c"]
+    command:
+      - |
+        set -euo pipefail
+        BS=kafka:29092
+        create () { kafka-topics --bootstrap-server "$$BS" --create --if-not-exists --topic "$$1" --partitions "$$2" --replication-factor 1 $${3:-}; }
+        echo "Creating topics..."
+        create clickstream.events.raw     6
+        create analytics.sessions         6
+        create analytics.metrics.1m       6
+        create analytics.topn.pages.1m    6
+        create analytics.funnel.live      6
+        create analytics.alerts           6
+        # Reference topics are compacted (KTable sources)
+        create ref.products               3 "--config cleanup.policy=compact"
+        create ref.campaigns              3 "--config cleanup.policy=compact"
+        echo "--- Topics ---"
+        kafka-topics --bootstrap-server "$$BS" --list
+    restart: "no"
+
+volumes:
+  kafka-data:
+  clickhouse-data:

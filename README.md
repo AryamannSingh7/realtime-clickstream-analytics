@@ -1,5 +1,7 @@
 # Real-Time Clickstream Analytics Pipeline
 
+[![CI](https://github.com/AryamannSingh7/realtime-clickstream-analytics/actions/workflows/ci.yml/badge.svg)](https://github.com/AryamannSingh7/realtime-clickstream-analytics/actions/workflows/ci.yml)
+
 A production-minded, end-to-end **real-time analytics pipeline** that ingests a high-volume clickstream, processes it with **stateful, windowed stream operations**, stores results in a **columnar OLAP store**, and surfaces them on a **live dashboard** — all containerized and runnable with a single command.
 
 > **Status:** 🚧 Under active construction. Built milestone-by-milestone; see the [roadmap](#roadmap) below.
@@ -49,7 +51,7 @@ Everything in the stack is **free and open-source** — no paid services require
 
 ## Roadmap
 
-- [ ] **M0** — Scaffolding & infra (Kafka, Schema Registry, ClickHouse via Docker Compose)
+- [x] **M0** — Scaffolding & infra (Kafka, Schema Registry, ClickHouse via Docker Compose) ✅
 - [ ] **M1** — Ingestion: realistic event generator → Kafka → ClickHouse
 - [ ] **M2** — Streaming core: per-minute metrics + windowed top-N
 - [ ] **M3** — Sessionization + conversion funnel + enrichment joins
@@ -61,7 +63,38 @@ Everything in the stack is **free and open-source** — no paid services require
 
 ## Getting started
 
-> Coming with M0. The goal: `docker compose up` brings the entire pipeline live locally.
+**Prerequisites:** Docker Desktop, JDK 17. (Maven not required — a wrapper is included.)
+
+```bash
+# 1. Bring up the infra (Kafka KRaft + Schema Registry + ClickHouse) and create topics
+docker compose up -d
+
+# 2. Verify everything is wired correctly
+bash scripts/smoke-test.sh
+
+# 3. Build the Java services (Avro codegen + compile + tests)
+./mvnw -B verify
+```
+
+| Service | Endpoint |
+|---|---|
+| Kafka (host) | `localhost:9092` |
+| Schema Registry | http://localhost:8081 |
+| ClickHouse (HTTP) | http://localhost:8123 — user `clickstream` / pass `clickstream`, db `analytics` (local dev creds) |
+
+Tear down with `docker compose down` (add `-v` to also drop data volumes).
+
+## Project layout
+
+```
+schemas/            # Shared Avro schema(s) — source of truth for event models
+services/
+  common/           # Avro-generated event models (shared module)
+infra/clickhouse/    # ClickHouse init SQL (schema)
+scripts/            # Helper scripts (smoke test, etc.)
+docs/               # Architecture write-up + ADRs (decision records)
+docker-compose.yml  # One-command local stack
+```
 
 ---
 

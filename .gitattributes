@@ -1,0 +1,17 @@
+# Normalize line endings across platforms.
+# Default: let Git handle text detection, store as LF in the repo.
+* text=auto eol=lf
+
+# Shell scripts and the Maven wrapper MUST be LF (they run on Linux CI / in containers).
+*.sh    text eol=lf
+mvnw    text eol=lf
+
+# Windows batch / cmd files MUST be CRLF.
+*.cmd   text eol=crlf
+*.bat   text eol=crlf
+
+# Treat these as binary (no EOL conversion).
+*.jar   binary
+*.png   binary
+*.gif   binary
+*.ico   binary

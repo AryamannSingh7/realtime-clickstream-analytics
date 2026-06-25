@@ -1,0 +1,66 @@
+{
+  "type": "record",
+  "name": "ClickEvent",
+  "namespace": "com.clickstream.avro",
+  "doc": "A single user interaction event in the simulated e-commerce clickstream.",
+  "fields": [
+    { "name": "event_id", "type": "string", "doc": "Unique event id (UUID)." },
+    {
+      "name": "event_type",
+      "doc": "The kind of interaction.",
+      "type": {
+        "type": "enum",
+        "name": "EventType",
+        "symbols": [
+          "page_view",
+          "click",
+          "search",
+          "add_to_cart",
+          "remove_from_cart",
+          "checkout_start",
+          "purchase",
+          "login",
+          "logout"
+        ]
+      }
+    },
+    { "name": "anonymous_id", "type": "string", "doc": "Device/cookie id; always present. Sessionization key." },
+    { "name": "user_id", "type": ["null", "string"], "default": null, "doc": "Authenticated user id; null when anonymous." },
+    {
+      "name": "event_time",
+      "type": { "type": "long", "logicalType": "timestamp-millis" },
+      "doc": "Event time (epoch millis). Drives event-time windowing, NOT ingest time."
+    },
+    { "name": "path", "type": "string", "doc": "Page path, e.g. /product/123." },
+    { "name": "referrer", "type": ["null", "string"], "default": null },
+    { "name": "utm_source", "type": ["null", "string"], "default": null },
+    { "name": "utm_campaign", "type": ["null", "string"], "default": null },
+    { "name": "product_id", "type": ["null", "string"], "default": null, "doc": "Set for product/cart/purchase events." },
+    { "name": "price", "type": ["null", "double"], "default": null },
+    { "name": "revenue", "type": ["null", "double"], "default": null, "doc": "Set for purchase events." },
+    {
+      "name": "device",
+      "type": {
+        "type": "record",
+        "name": "Device",
+        "fields": [
+          { "name": "type", "type": "string", "doc": "desktop | mobile | tablet" },
+          { "name": "os", "type": "string" },
+          { "name": "browser", "type": "string" }
+        ]
+      }
+    },
+    {
+      "name": "geo",
+      "type": {
+        "type": "record",
+        "name": "Geo",
+        "fields": [
+          { "name": "country", "type": "string" },
+          { "name": "city", "type": "string" }
+        ]
+      }
+    },
+    { "name": "user_agent", "type": ["null", "string"], "default": null }
+  ]
+}
