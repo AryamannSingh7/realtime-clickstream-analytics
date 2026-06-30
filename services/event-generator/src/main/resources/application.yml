@@ -1,0 +1,39 @@
+# Event generator — produces Avro ClickEvents to Kafka.
+# Defaults target a local `docker compose up` stack; override the two env vars to
+# point at infra running elsewhere (e.g. inside the compose network).
+
+server:
+  port: 8089
+
+spring:
+  application:
+    name: event-generator
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: io.confluent.kafka.serializers.KafkaAvroSerializer
+      acks: "1"
+      properties:
+        schema.registry.url: ${SCHEMA_REGISTRY_URL:http://localhost:8081}
+        auto.register.schemas: true
+        # Throughput-oriented batching for a high-volume single producer.
+        linger.ms: 20
+        batch.size: 65536
+        compression.type: lz4
+
+generator:
+  eps: 200
+  virtual-users: 500
+  topic: clickstream.events.raw
+  late-event-ratio: 0.05
+  late-event-max-delay-ms: 60000
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always

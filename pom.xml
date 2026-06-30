@@ -13,6 +13,7 @@
 
     <modules>
         <module>services/common</module>
+        <module>services/event-generator</module>
     </modules>
 
     <properties>
@@ -58,6 +59,17 @@
     <build>
         <pluginManagement>
             <plugins>
+                <!-- Retain method/constructor parameter names so Spring MVC (@RequestParam)
+                     and other reflection-based binding work without explicit names. The
+                     Spring Boot starter-parent sets this for you; we import the BOM instead,
+                     so enable it here. -->
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-compiler-plugin</artifactId>
+                    <configuration>
+                        <parameters>true</parameters>
+                    </configuration>
+                </plugin>
                 <plugin>
                     <groupId>org.apache.avro</groupId>
                     <artifactId>avro-maven-plugin</artifactId>
