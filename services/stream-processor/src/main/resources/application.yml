@@ -12,9 +12,7 @@ spring:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
     streams:
       application-id: clickstream-stream-processor
-      # Held back until a topology exists (a topology is added in M2.2); an empty
-      # topology cannot start. Flipped to true once the source stream is wired.
-      auto-startup: false
+      auto-startup: true
       properties:
         # Exactly-once (v2) end-to-end with the raw source and output topics.
         processing.guarantee: exactly_once_v2
