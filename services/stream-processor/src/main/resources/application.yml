@@ -1,0 +1,38 @@
+# Stream processor — Kafka Streams topology host.
+# Defaults target a local `docker compose up` stack; override the two env vars to
+# point at infra running elsewhere (e.g. inside the compose network).
+
+server:
+  port: 8090
+
+spring:
+  application:
+    name: stream-processor
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    streams:
+      application-id: clickstream-stream-processor
+      # Held back until a topology exists (a topology is added in M2.2); an empty
+      # topology cannot start. Flipped to true once the source stream is wired.
+      auto-startup: false
+      properties:
+        # Exactly-once (v2) end-to-end with the raw source and output topics.
+        processing.guarantee: exactly_once_v2
+        schema.registry.url: ${SCHEMA_REGISTRY_URL:http://localhost:8081}
+        # Keys are anonymous_id strings; per-operation value serdes are set explicitly.
+        default.key.serde: org.apache.kafka.common.serialization.Serdes$StringSerde
+        default.deserialization.exception.handler: org.apache.kafka.streams.errors.LogAndContinueExceptionHandler
+        commit.interval.ms: 1000
+        num.stream.threads: 2
+        # Single-broker local stack — internal topics can only have RF 1.
+        replication.factor: 1
+        state.dir: ${KAFKA_STREAMS_STATE_DIR:/tmp/kafka-streams}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
