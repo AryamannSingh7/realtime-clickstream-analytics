@@ -52,7 +52,7 @@ Everything in the stack is **free and open-source** — no paid services require
 ## Roadmap
 
 - [x] **M0** — Scaffolding & infra (Kafka, Schema Registry, ClickHouse via Docker Compose) ✅
-- [ ] **M1** — Ingestion: realistic event generator → Kafka → ClickHouse
+- [x] **M1** — Ingestion: realistic event generator → Kafka → ClickHouse (Kafka Connect sink) ✅
 - [ ] **M2** — Streaming core: per-minute metrics + windowed top-N
 - [ ] **M3** — Sessionization + conversion funnel + enrichment joins
 - [ ] **M4** — Stateful anomaly / spike detection
@@ -66,23 +66,35 @@ Everything in the stack is **free and open-source** — no paid services require
 **Prerequisites:** Docker Desktop, JDK 17. (Maven not required — a wrapper is included.)
 
 ```bash
-# 1. Bring up the infra (Kafka KRaft + Schema Registry + ClickHouse) and create topics
-docker compose up -d
+# 1. Bring up the whole ingestion stack and build the service images:
+#    Kafka (KRaft) + Schema Registry + ClickHouse + topics, plus the
+#    Kafka Connect ClickHouse sink and the event-generator producing load.
+docker compose up -d --build
 
 # 2. Verify everything is wired correctly
 bash scripts/smoke-test.sh
 
-# 3. Build the Java services (Avro codegen + compile + tests)
-./mvnw -B verify
+# 3. Watch raw events land in ClickHouse (count should climb):
+curl -s 'http://localhost:8123/?user=clickstream&password=clickstream' \
+  --data-binary 'SELECT count() FROM analytics.events'
 ```
+
+On `up`, the **event-generator** starts producing a realistic Avro clickstream to
+`clickstream.events.raw`, and the **ClickHouse Kafka Connect sink** (auto-registered by the
+`register-connector` job) lands those events in `analytics.events` — so the ingestion path is
+live end-to-end with a single command.
 
 | Service | Endpoint |
 |---|---|
 | Kafka (host) | `localhost:9092` |
 | Schema Registry | http://localhost:8081 |
+| Kafka Connect (REST) | http://localhost:8083 — `GET /connectors/clickhouse-sink/status` |
+| Event generator | http://localhost:8089/api/generator/status — control rate / pause / resume |
 | ClickHouse (HTTP) | http://localhost:8123 — user `clickstream` / pass `clickstream`, db `analytics` (local dev creds) |
 
 Tear down with `docker compose down` (add `-v` to also drop data volumes).
+
+To build the Java services outside Docker (Avro codegen + compile + tests): `./mvnw -B verify`.
 
 ## Project layout
 
@@ -90,7 +102,10 @@ Tear down with `docker compose down` (add `-v` to also drop data volumes).
 schemas/            # Shared Avro schema(s) — source of truth for event models
 services/
   common/           # Avro-generated event models (shared module)
-infra/clickhouse/    # ClickHouse init SQL (schema)
+  event-generator/  # Spring Boot load generator (realistic journeys → Kafka)
+infra/
+  clickhouse/       # ClickHouse init SQL (schema)
+  kafka-connect/    # ClickHouse sink connector image + config
 scripts/            # Helper scripts (smoke test, etc.)
 docs/               # Architecture write-up + ADRs (decision records)
 docker-compose.yml  # One-command local stack
