@@ -1,0 +1,24 @@
+{
+  "type": "record",
+  "name": "MinuteMetrics",
+  "namespace": "com.clickstream.avro",
+  "doc": "Per-minute rollup of the whole clickstream, keyed by tumbling event-time window. Emitted once per window on close (analytics.metrics.1m).",
+  "fields": [
+    {
+      "name": "window_start",
+      "type": { "type": "long", "logicalType": "timestamp-millis" },
+      "doc": "Inclusive start of the 1-minute event-time window."
+    },
+    {
+      "name": "window_end",
+      "type": { "type": "long", "logicalType": "timestamp-millis" },
+      "doc": "Exclusive end of the 1-minute event-time window."
+    },
+    { "name": "events", "type": "long", "doc": "Total events observed in the window." },
+    { "name": "page_views", "type": "long", "doc": "Count of page_view events." },
+    { "name": "add_to_cart", "type": "long", "doc": "Count of add_to_cart events." },
+    { "name": "checkout_start", "type": "long", "doc": "Count of checkout_start events." },
+    { "name": "purchases", "type": "long", "doc": "Count of purchase events." },
+    { "name": "revenue", "type": "double", "doc": "Sum of purchase revenue in the window." }
+  ]
+}
