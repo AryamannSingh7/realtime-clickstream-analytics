@@ -1,0 +1,34 @@
+{
+  "type": "record",
+  "name": "PageTopN",
+  "namespace": "com.clickstream.avro",
+  "doc": "Top-N most-viewed page paths for a 1-minute event-time window. Emitted once per window on close (analytics.topn.pages.1m). Array order is the ranking, highest views first.",
+  "fields": [
+    {
+      "name": "window_start",
+      "type": { "type": "long", "logicalType": "timestamp-millis" },
+      "doc": "Inclusive start of the 1-minute event-time window."
+    },
+    {
+      "name": "window_end",
+      "type": { "type": "long", "logicalType": "timestamp-millis" },
+      "doc": "Exclusive end of the 1-minute event-time window."
+    },
+    {
+      "name": "entries",
+      "doc": "Ranked page paths, highest views first (index 0 is rank 1).",
+      "type": {
+        "type": "array",
+        "items": {
+          "type": "record",
+          "name": "PageCount",
+          "doc": "A single page path and its view count within a window. Also used as the intermediate (path, views) value on the top-N repartition stream.",
+          "fields": [
+            { "name": "path", "type": "string", "doc": "Page path, e.g. /product/123." },
+            { "name": "views", "type": "long", "doc": "page_view count for this path in the window." }
+          ]
+        }
+      }
+    }
+  ]
+}
