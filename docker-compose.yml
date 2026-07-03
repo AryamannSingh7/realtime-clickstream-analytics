@@ -196,6 +196,35 @@ services:
       timeout: 5s
       retries: 12
 
+  # Kafka Streams topology host (M2): consumes clickstream.events.raw and writes
+  # streaming rollups -> analytics.metrics.1m (tumbling 1-min) + analytics.topn.pages.1m
+  # (windowed top-N, Processor API). EOS-v2. Control/metrics at :8090/actuator.
+  stream-processor:
+    build:
+      context: .
+      dockerfile: services/stream-processor/Dockerfile
+    image: clickstream/stream-processor:0.1.0
+    container_name: stream-processor
+    depends_on:
+      kafka:
+        condition: service_healthy
+      schema-registry:
+        condition: service_healthy
+      # Output topics (analytics.metrics.1m / analytics.topn.pages.1m) must exist first:
+      # broker auto-create is disabled, so wait for the one-shot topic creation to finish.
+      init-kafka:
+        condition: service_completed_successfully
+    ports:
+      - "8090:8090"
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      SCHEMA_REGISTRY_URL: http://schema-registry:8081
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8090/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
 volumes:
   kafka-data:
   clickhouse-data:
