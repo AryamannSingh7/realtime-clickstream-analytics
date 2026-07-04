@@ -1,0 +1,11 @@
+{
+  "type": "record",
+  "name": "Product",
+  "namespace": "com.clickstream.avro",
+  "doc": "Reference product dimension, published to the compacted ref.products topic and joined onto events for category enrichment.",
+  "fields": [
+    { "name": "id", "type": "string", "doc": "Stable SKU id; also the ref.products record key." },
+    { "name": "category", "type": "string", "doc": "Product category, e.g. electronics." },
+    { "name": "price", "type": "double", "doc": "Catalog list price." }
+  ]
+}

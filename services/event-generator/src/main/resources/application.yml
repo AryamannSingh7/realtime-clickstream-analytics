@@ -26,6 +26,7 @@ generator:
   eps: 200
   virtual-users: 500
   topic: clickstream.events.raw
+  ref-products-topic: ref.products
   late-event-ratio: 0.05
   late-event-max-delay-ms: 60000
 

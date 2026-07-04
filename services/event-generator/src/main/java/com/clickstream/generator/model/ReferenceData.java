@@ -115,6 +115,11 @@ public class ReferenceData {
                 new Product("sku-8003", "beauty", 64.00));
     }
 
+    /** The full, stable product catalog — seeded into the {@code ref.products} dimension topic. */
+    public List<Product> products() {
+        return products;
+    }
+
     public Product randomProduct() {
         return pick(products);
     }
