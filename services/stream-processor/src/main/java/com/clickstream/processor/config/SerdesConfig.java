@@ -4,6 +4,7 @@ import com.clickstream.avro.ClickEvent;
 import com.clickstream.avro.MinuteMetrics;
 import com.clickstream.avro.PageCount;
 import com.clickstream.avro.PageTopN;
+import com.clickstream.avro.SessionSummary;
 import com.clickstream.processor.serde.AvroSerdes;
 import io.confluent.kafka.streams.serdes.avro.SpecificAvroSerde;
 import org.springframework.beans.factory.annotation.Value;
@@ -41,6 +42,11 @@ public class SerdesConfig {
 
     @Bean
     public SpecificAvroSerde<PageTopN> pageTopNSerde() {
+        return AvroSerdes.forValue(schemaRegistryUrl);
+    }
+
+    @Bean
+    public SpecificAvroSerde<SessionSummary> sessionSummarySerde() {
         return AvroSerdes.forValue(schemaRegistryUrl);
     }
 }

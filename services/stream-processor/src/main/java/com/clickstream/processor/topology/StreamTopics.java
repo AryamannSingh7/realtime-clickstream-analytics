@@ -14,6 +14,9 @@ public final class StreamTopics {
     /** Raw ingress topic — Avro values, keyed by anonymous_id for per-user ordering. */
     public static final String RAW_EVENTS = "clickstream.events.raw";
 
+    /** Per-visitor session summaries ({@code SessionSummary}), one record per closed session. */
+    public static final String SESSIONS = "analytics.sessions";
+
     /** Per-minute whole-stream rollup ({@code MinuteMetrics}), one record per closed window. */
     public static final String METRICS_1M = "analytics.metrics.1m";
 
@@ -25,4 +28,10 @@ public final class StreamTopics {
 
     /** Lateness allowance before a window is considered closed and emitted. */
     public static final Duration WINDOW_GRACE = Duration.ofSeconds(5);
+
+    /** Inactivity gap that ends a session: 30 minutes of silence for a visitor closes it. */
+    public static final Duration SESSION_INACTIVITY_GAP = Duration.ofMinutes(30);
+
+    /** Lateness allowance before a closed session is emitted. */
+    public static final Duration SESSION_GRACE = Duration.ofMinutes(1);
 }

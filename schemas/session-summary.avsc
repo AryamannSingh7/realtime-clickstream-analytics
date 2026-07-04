@@ -1,0 +1,30 @@
+{
+  "type": "record",
+  "name": "SessionSummary",
+  "namespace": "com.clickstream.avro",
+  "doc": "One visitor session, built from a 30-minute inactivity-gap session window keyed by anonymous_id. Emitted once when the session closes (analytics.sessions).",
+  "fields": [
+    { "name": "session_id", "type": "string", "doc": "Stable session key: anonymous_id + ':' + session_start epoch-millis." },
+    { "name": "anonymous_id", "type": "string", "doc": "Device/cookie id the session belongs to." },
+    { "name": "user_id", "type": ["null", "string"], "default": null, "doc": "First authenticated user id seen in the session; null if it stayed anonymous." },
+    {
+      "name": "session_start",
+      "type": { "type": "long", "logicalType": "timestamp-millis" },
+      "doc": "Event time of the first event in the session (inclusive window start)."
+    },
+    {
+      "name": "session_end",
+      "type": { "type": "long", "logicalType": "timestamp-millis" },
+      "doc": "Event time of the last event in the session (window end)."
+    },
+    { "name": "duration_ms", "type": "long", "doc": "session_end - session_start, in milliseconds." },
+    { "name": "events", "type": "long", "doc": "Total events in the session." },
+    { "name": "page_views", "type": "long", "doc": "Count of page_view events." },
+    { "name": "add_to_cart", "type": "long", "doc": "Count of add_to_cart events." },
+    { "name": "checkout_start", "type": "long", "doc": "Count of checkout_start events." },
+    { "name": "purchases", "type": "long", "doc": "Count of purchase events." },
+    { "name": "revenue", "type": "double", "doc": "Sum of purchase revenue in the session." },
+    { "name": "entry_path", "type": "string", "doc": "Path of the first (landing) event in the session." },
+    { "name": "converted", "type": "boolean", "doc": "True if the session had at least one purchase." }
+  ]
+}

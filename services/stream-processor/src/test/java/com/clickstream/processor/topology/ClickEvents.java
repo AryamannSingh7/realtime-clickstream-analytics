@@ -19,10 +19,16 @@ final class ClickEvents {
     }
 
     static ClickEvent event(EventType type, String path, Instant eventTime, Double revenue) {
+        return event("anon-1", null, type, path, eventTime, revenue);
+    }
+
+    static ClickEvent event(
+            String anonymousId, String userId, EventType type, String path, Instant eventTime, Double revenue) {
         return ClickEvent.newBuilder()
                 .setEventId(UUID.randomUUID().toString())
                 .setEventType(type)
-                .setAnonymousId("anon-1")
+                .setAnonymousId(anonymousId)
+                .setUserId(userId)
                 .setEventTime(eventTime)
                 .setPath(path)
                 .setDevice(new Device("desktop", "macos", "chrome"))
