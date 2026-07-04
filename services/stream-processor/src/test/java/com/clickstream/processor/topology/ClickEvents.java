@@ -22,6 +22,14 @@ final class ClickEvents {
         return event("anon-1", null, type, path, eventTime, revenue);
     }
 
+    /** An event carrying a product_id, for exercising the product-enrichment join. */
+    static ClickEvent withProduct(EventType type, String path, Instant eventTime, String productId, Double price) {
+        ClickEvent event = event(type, path, eventTime);
+        event.setProductId(productId);
+        event.setPrice(price);
+        return event;
+    }
+
     static ClickEvent event(
             String anonymousId, String userId, EventType type, String path, Instant eventTime, Double revenue) {
         return ClickEvent.newBuilder()

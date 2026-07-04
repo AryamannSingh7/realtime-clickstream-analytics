@@ -14,6 +14,12 @@ public final class StreamTopics {
     /** Raw ingress topic — Avro values, keyed by anonymous_id for per-user ordering. */
     public static final String RAW_EVENTS = "clickstream.events.raw";
 
+    /** Compacted product dimension ({@code Product}), consumed as a GlobalKTable for enrichment. */
+    public static final String REF_PRODUCTS = "ref.products";
+
+    /** Events enriched with product-dimension attributes ({@code EnrichedClickEvent}). */
+    public static final String ENRICHED_EVENTS = "clickstream.events.enriched";
+
     /** Per-visitor session summaries ({@code SessionSummary}), one record per closed session. */
     public static final String SESSIONS = "analytics.sessions";
 

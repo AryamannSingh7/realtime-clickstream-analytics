@@ -1,0 +1,32 @@
+{
+  "type": "record",
+  "name": "EnrichedClickEvent",
+  "namespace": "com.clickstream.avro",
+  "doc": "A ClickEvent enriched with product-dimension attributes via a GlobalKTable join on product_id (clickstream.events.enriched). Nested device/geo are flattened and event_type is a string so this schema does not redefine the shared ClickEvent types.",
+  "fields": [
+    { "name": "event_id", "type": "string" },
+    { "name": "event_type", "type": "string", "doc": "EventType name, e.g. page_view." },
+    { "name": "anonymous_id", "type": "string" },
+    { "name": "user_id", "type": ["null", "string"], "default": null },
+    {
+      "name": "event_time",
+      "type": { "type": "long", "logicalType": "timestamp-millis" },
+      "doc": "Original event time (epoch millis)."
+    },
+    { "name": "path", "type": "string" },
+    { "name": "referrer", "type": ["null", "string"], "default": null },
+    { "name": "utm_source", "type": ["null", "string"], "default": null },
+    { "name": "utm_campaign", "type": ["null", "string"], "default": null },
+    { "name": "product_id", "type": ["null", "string"], "default": null },
+    { "name": "price", "type": ["null", "double"], "default": null },
+    { "name": "revenue", "type": ["null", "double"], "default": null },
+    { "name": "device_type", "type": "string" },
+    { "name": "device_os", "type": "string" },
+    { "name": "device_browser", "type": "string" },
+    { "name": "geo_country", "type": "string" },
+    { "name": "geo_city", "type": "string" },
+    { "name": "user_agent", "type": ["null", "string"], "default": null },
+    { "name": "product_category", "type": ["null", "string"], "default": null, "doc": "Category from ref.products; null when the event has no product_id or the SKU is unknown." },
+    { "name": "product_ref_price", "type": ["null", "double"], "default": null, "doc": "Catalog price from ref.products for the joined SKU." }
+  ]
+}
