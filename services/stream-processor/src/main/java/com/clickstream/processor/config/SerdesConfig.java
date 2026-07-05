@@ -2,6 +2,7 @@ package com.clickstream.processor.config;
 
 import com.clickstream.avro.ClickEvent;
 import com.clickstream.avro.EnrichedClickEvent;
+import com.clickstream.avro.FunnelSnapshot;
 import com.clickstream.avro.MinuteMetrics;
 import com.clickstream.avro.Product;
 import com.clickstream.avro.PageCount;
@@ -59,6 +60,11 @@ public class SerdesConfig {
 
     @Bean
     public SpecificAvroSerde<EnrichedClickEvent> enrichedClickEventSerde() {
+        return AvroSerdes.forValue(schemaRegistryUrl);
+    }
+
+    @Bean
+    public SpecificAvroSerde<FunnelSnapshot> funnelSnapshotSerde() {
         return AvroSerdes.forValue(schemaRegistryUrl);
     }
 }

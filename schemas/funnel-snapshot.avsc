@@ -1,0 +1,21 @@
+{
+  "type": "record",
+  "name": "FunnelSnapshot",
+  "namespace": "com.clickstream.avro",
+  "doc": "Live cumulative conversion funnel across all visitors since the topology started tracking. Counts are distinct visitors who reached each stage (monotonic: views >= add_to_cart >= checkout_start >= purchases). Emitted on a wall-clock cadence to analytics.funnel.live.",
+  "fields": [
+    {
+      "name": "snapshot_time",
+      "type": { "type": "long", "logicalType": "timestamp-millis" },
+      "doc": "Wall-clock time this snapshot was emitted."
+    },
+    { "name": "views", "type": "long", "doc": "Distinct visitors who reached the view stage (page_view)." },
+    { "name": "add_to_cart", "type": "long", "doc": "Distinct visitors who reached the add-to-cart stage." },
+    { "name": "checkout_start", "type": "long", "doc": "Distinct visitors who reached the checkout-start stage." },
+    { "name": "purchases", "type": "long", "doc": "Distinct visitors who reached the purchase stage." },
+    { "name": "view_to_cart_rate", "type": "double", "doc": "add_to_cart / views (0 when no views)." },
+    { "name": "cart_to_checkout_rate", "type": "double", "doc": "checkout_start / add_to_cart (0 when no carts)." },
+    { "name": "checkout_to_purchase_rate", "type": "double", "doc": "purchases / checkout_start (0 when no checkouts)." },
+    { "name": "overall_conversion_rate", "type": "double", "doc": "purchases / views (0 when no views)." }
+  ]
+}

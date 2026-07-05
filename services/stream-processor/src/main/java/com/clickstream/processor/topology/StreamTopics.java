@@ -29,6 +29,9 @@ public final class StreamTopics {
     /** Top-N most-viewed page paths per minute ({@code PageTopN}), one record per closed window. */
     public static final String TOPN_PAGES_1M = "analytics.topn.pages.1m";
 
+    /** Live cumulative conversion funnel ({@code FunnelSnapshot}), emitted on a wall-clock cadence. */
+    public static final String FUNNEL_LIVE = "analytics.funnel.live";
+
     /** Size of the tumbling event-time window every rollup is computed over. */
     public static final Duration WINDOW_SIZE = Duration.ofMinutes(1);
 
