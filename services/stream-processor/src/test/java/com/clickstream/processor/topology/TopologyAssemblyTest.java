@@ -1,5 +1,6 @@
 package com.clickstream.processor.topology;
 
+import com.clickstream.avro.AnomalyAlert;
 import com.clickstream.avro.ClickEvent;
 import com.clickstream.avro.EnrichedClickEvent;
 import com.clickstream.avro.FunnelSnapshot;
@@ -22,7 +23,8 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 /**
  * Asserts the sub-topologies compose into one valid {@link Topology} off a single source
  * stream, mirroring the Spring wiring (source + minute-metrics + top-N + sessionization +
- * enrichment + live-funnel). Catches store-name / processor-name clashes the per-topology tests can't.
+ * enrichment + live-funnel + anomaly-detection). Catches store-name / processor-name clashes
+ * the per-topology tests can't.
  */
 class TopologyAssemblyTest {
 
@@ -47,6 +49,7 @@ class TopologyAssemblyTest {
         EnrichmentTopology.build(builder, source,
                 AvroSerdes.<Product>forValue(SR_URL), AvroSerdes.<EnrichedClickEvent>forValue(SR_URL));
         LiveFunnelTopology.build(builder, source, clickEventSerde, AvroSerdes.<FunnelSnapshot>forValue(SR_URL));
+        AnomalyDetectionTopology.build(builder, source, AvroSerdes.<AnomalyAlert>forValue(SR_URL));
 
         assertThatCode(builder::build).doesNotThrowAnyException();
 
@@ -58,6 +61,7 @@ class TopologyAssemblyTest {
                 .contains(StreamTopics.SESSIONS)
                 .contains(StreamTopics.REF_PRODUCTS)
                 .contains(StreamTopics.ENRICHED_EVENTS)
-                .contains(StreamTopics.FUNNEL_LIVE);
+                .contains(StreamTopics.FUNNEL_LIVE)
+                .contains(StreamTopics.ALERTS);
     }
 }

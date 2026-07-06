@@ -1,5 +1,6 @@
 package com.clickstream.processor.config;
 
+import com.clickstream.avro.AnomalyAlert;
 import com.clickstream.avro.ClickEvent;
 import com.clickstream.avro.EnrichedClickEvent;
 import com.clickstream.avro.FunnelSnapshot;
@@ -65,6 +66,11 @@ public class SerdesConfig {
 
     @Bean
     public SpecificAvroSerde<FunnelSnapshot> funnelSnapshotSerde() {
+        return AvroSerdes.forValue(schemaRegistryUrl);
+    }
+
+    @Bean
+    public SpecificAvroSerde<AnomalyAlert> anomalyAlertSerde() {
         return AvroSerdes.forValue(schemaRegistryUrl);
     }
 }

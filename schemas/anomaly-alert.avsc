@@ -1,0 +1,20 @@
+{
+  "type": "record",
+  "name": "AnomalyAlert",
+  "namespace": "com.clickstream.avro",
+  "doc": "A volume anomaly for one 60s bucket, fired when the observed event count deviates from an EWMA baseline by at least threshold_k standard deviations. Emitted to analytics.alerts.",
+  "fields": [
+    {
+      "name": "alert_time",
+      "type": { "type": "long", "logicalType": "timestamp-millis" },
+      "doc": "Wall-clock time the bucket closed and this alert fired."
+    },
+    { "name": "observed", "type": "long", "doc": "Events counted in the bucket that fired." },
+    { "name": "baseline_mean", "type": "double", "doc": "EWMA mean events/bucket before this observation was folded in." },
+    { "name": "baseline_stddev", "type": "double", "doc": "Effective baseline standard deviation used for scoring (EWMA stddev floored at sqrt(mean))." },
+    { "name": "z_score", "type": "double", "doc": "(observed - baseline_mean) / baseline_stddev; positive is a spike, negative a drop." },
+    { "name": "threshold_k", "type": "double", "doc": "Deviation threshold in standard deviations that had to be crossed to alert." },
+    { "name": "direction", "type": "string", "doc": "\"spike\" when observed is above baseline, \"drop\" when below." },
+    { "name": "baseline_samples", "type": "long", "doc": "Number of buckets folded into the baseline before this one." }
+  ]
+}
