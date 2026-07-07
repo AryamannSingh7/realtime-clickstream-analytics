@@ -8,6 +8,16 @@ server:
 spring:
   application:
     name: analytics-api
+  # ClickHouse OLAP source (HTTP interface). Pooled by HikariCP.
+  datasource:
+    url: ${CLICKHOUSE_URL:jdbc:clickhouse://localhost:8123/analytics}
+    driver-class-name: com.clickhouse.jdbc.ClickHouseDriver
+    username: ${CLICKHOUSE_USER:clickstream}
+    password: ${CLICKHOUSE_PASSWORD:clickstream}
+    hikari:
+      maximum-pool-size: 4
+      connection-timeout: 5000
+      pool-name: clickhouse-pool
 
 management:
   endpoints:

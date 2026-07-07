@@ -29,6 +29,20 @@
             <artifactId>micrometer-registry-prometheus</artifactId>
         </dependency>
 
+        <!-- ClickHouse OLAP access: Spring JdbcTemplate over the official ClickHouse JDBC
+             driver (HTTP interface, :8123). The `all` classifier is the self-contained
+             shaded artifact (bundles the http client + deps). -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-jdbc</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.clickhouse</groupId>
+            <artifactId>clickhouse-jdbc</artifactId>
+            <version>${clickhouse-jdbc.version}</version>
+            <classifier>all</classifier>
+        </dependency>
+
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
