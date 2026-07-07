@@ -226,6 +226,39 @@ services:
       timeout: 5s
       retries: 12
 
+  # Serving layer (M5): SSE live streams over the analytics.* output topics + ClickHouse-backed
+  # OLAP endpoints (funnel / unique visitors / timeseries / top pages). Control/metrics at
+  # :8091/actuator; live streams at :8091/api/stream/*; OLAP at :8091/api/olap/*.
+  analytics-api:
+    build:
+      context: .
+      dockerfile: services/analytics-api/Dockerfile
+    image: clickstream/analytics-api:0.1.0
+    container_name: analytics-api
+    depends_on:
+      kafka:
+        condition: service_healthy
+      schema-registry:
+        condition: service_healthy
+      clickhouse:
+        condition: service_healthy
+      # Output topics must exist before the SSE consumers subscribe (broker auto-create is off).
+      init-kafka:
+        condition: service_completed_successfully
+    ports:
+      - "8091:8091"
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      SCHEMA_REGISTRY_URL: http://schema-registry:8081
+      CLICKHOUSE_URL: jdbc:clickhouse://clickhouse:8123/analytics
+      CLICKHOUSE_USER: clickstream
+      CLICKHOUSE_PASSWORD: clickstream
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8091/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
 volumes:
   kafka-data:
   clickhouse-data:
