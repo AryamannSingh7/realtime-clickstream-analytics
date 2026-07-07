@@ -18,6 +18,19 @@ spring:
       maximum-pool-size: 4
       connection-timeout: 5000
       pool-name: clickhouse-pool
+  # Consumes the analytics.* output topics and fans them out to browsers over SSE.
+  # A random group suffix makes each API instance an independent broadcaster that reads
+  # every partition (SSE fan-out ≠ competing consumers); `latest` = live, not history.
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    consumer:
+      group-id: analytics-api-sse-${random.uuid}
+      auto-offset-reset: latest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: io.confluent.kafka.serializers.KafkaAvroDeserializer
+      properties:
+        schema.registry.url: ${SCHEMA_REGISTRY_URL:http://localhost:8081}
+        specific.avro.reader: true
 
 management:
   endpoints:

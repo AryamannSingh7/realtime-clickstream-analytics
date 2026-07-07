@@ -16,9 +16,26 @@
     <description>Spring Boot serving layer: SSE live streams over the analytics.* topics + ClickHouse-backed OLAP endpoints.</description>
 
     <dependencies>
+        <!-- Shared Avro-generated models for the analytics.* output topics. -->
+        <dependency>
+            <groupId>com.clickstream</groupId>
+            <artifactId>clickstream-common</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+        <!-- Kafka consumers for the analytics.* topics, fanned out to browsers over SSE. -->
+        <dependency>
+            <groupId>org.springframework.kafka</groupId>
+            <artifactId>spring-kafka</artifactId>
+        </dependency>
+        <!-- KafkaAvroDeserializer (SpecificRecord), backed by Schema Registry. -->
+        <dependency>
+            <groupId>io.confluent</groupId>
+            <artifactId>kafka-avro-serializer</artifactId>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
