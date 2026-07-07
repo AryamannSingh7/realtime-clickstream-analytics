@@ -1,0 +1,19 @@
+# Analytics API — serving layer (SSE live streams + ClickHouse OLAP).
+# Defaults target a local `docker compose up` stack; override the env vars to point at
+# infra running elsewhere (e.g. inside the compose network).
+
+server:
+  port: 8091
+
+spring:
+  application:
+    name: analytics-api
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always

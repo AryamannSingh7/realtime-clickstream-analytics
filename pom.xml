@@ -15,6 +15,7 @@
         <module>services/common</module>
         <module>services/event-generator</module>
         <module>services/stream-processor</module>
+        <module>services/analytics-api</module>
     </modules>
 
     <properties>
