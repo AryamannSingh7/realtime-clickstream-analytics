@@ -17,11 +17,26 @@
   --text-dim: #9aa0aa; /* secondary / labels */
   --text-faint: #6b7280; /* axis ticks, muted meta */
 
-  --accent: #34d399; /* emerald — "live" / streaming, primary series */
-  --accent-2: #38bdf8; /* cyan — secondary series */
-  --violet: #a78bfa; /* tertiary series */
-  --amber: #fbbf24; /* warnings */
-  --danger: #f87171; /* alerts / drops */
+  /* Status semantics (reserved — never used as generic data hues) */
+  --accent: #2ee6a6; /* emerald — "live" / healthy status LED */
+  --good: #0ca30c;
+  --amber: #fab219; /* warning */
+  --danger: #e5484d; /* alerts / drops */
+
+  /* Validated categorical data series (dark steps, checked vs --surface).
+     Primary data color is blue (--series-1), NOT the status emerald. */
+  --series-1: #3987e5; /* blue   */
+  --series-2: #199e70; /* aqua   */
+  --series-3: #c98500; /* yellow */
+  --series-4: #9085e9; /* violet */
+  --series-5: #e66767; /* red    */
+  --series-6: #d55181; /* magenta*/
+  --series-7: #d95926; /* orange */
+  --series-8: #4f9d3a; /* green  */
+
+  /* Chart chrome (dark) */
+  --grid: #23262d; /* recessive hairline gridlines */
+  --axis: #33373f; /* baseline / axis */
 
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
@@ -38,10 +53,12 @@
   --color-dim: var(--text-dim);
   --color-faint: var(--text-faint);
   --color-accent: var(--accent);
-  --color-accent-2: var(--accent-2);
-  --color-violet: var(--violet);
+  --color-good: var(--good);
   --color-amber: var(--amber);
   --color-danger: var(--danger);
+  --color-series-1: var(--series-1);
+  --color-grid: var(--grid);
+  --color-axis: var(--axis);
   --font-sans: var(--font-sans);
   --font-mono: var(--font-mono);
 }
