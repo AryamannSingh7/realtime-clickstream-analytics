@@ -259,6 +259,27 @@ services:
       timeout: 5s
       retries: 12
 
+  # Frontend (M6): Next.js dashboard. Server-side proxies same-origin /api/olap/*
+  # and /api/stream/* to the analytics-api (no CORS; backend URL stays server-side).
+  # Live SSE widgets + ClickHouse OLAP charts. Served at :3000.
+  dashboard:
+    build:
+      context: ./services/dashboard
+    image: clickstream/dashboard:0.1.0
+    container_name: dashboard
+    depends_on:
+      analytics-api:
+        condition: service_healthy
+    ports:
+      - "3000:3000"
+    environment:
+      ANALYTICS_API_URL: http://analytics-api:8091
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
 volumes:
   kafka-data:
   clickhouse-data:
