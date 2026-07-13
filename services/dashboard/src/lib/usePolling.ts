@@ -27,50 +27,65 @@ export function usePolling<T>(
   const [refreshing, setRefreshing] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<number | null>(null);
 
-  // Keep the latest fetcher without making it a re-fetch trigger itself.
-  const fetcherRef = useRef(fetcher);
-  fetcherRef.current = fetcher;
-
   const hasData = data !== null;
-  const [tick, setTick] = useState(0);
-  const refresh = useCallback(() => setTick((t) => t + 1), []);
 
+  // Keep the latest fetcher without making it a re-fetch trigger itself.
+  // Assigned in an effect, not during render, so the ref stays render-pure.
+  const fetcherRef = useRef(fetcher);
   useEffect(() => {
-    const controller = new AbortController();
-    let cancelled = false;
+    fetcherRef.current = fetcher;
+  });
 
-    setRefreshing(true);
+  // Tracks the in-flight request so a newer fetch (or unmount) cancels it.
+  const controllerRef = useRef<AbortController | null>(null);
+
+  // Extracted so mount/deps, the interval, and `refresh` all share one path.
+  // Called from effects and event-like callbacks rather than run synchronously
+  // in an effect body, so the `refreshing` flip doesn't cascade renders.
+  const load = useCallback(() => {
+    controllerRef.current?.abort();
+    const controller = new AbortController();
+    controllerRef.current = controller;
+
+    // Flip the in-flight flag on a microtask, not synchronously, so kicking off a
+    // fetch from an effect doesn't cascade an extra render before the effect settles.
+    queueMicrotask(() => {
+      if (!controller.signal.aborted) setRefreshing(true);
+    });
     fetcherRef
       .current(controller.signal)
       .then((result) => {
-        if (cancelled) return;
+        if (controller.signal.aborted) return;
         setData(result);
         setError(null);
         setLastUpdated(Date.now());
       })
       .catch((err: unknown) => {
-        if (cancelled || controller.signal.aborted) return;
+        if (controller.signal.aborted) return;
         setError(err instanceof Error ? err.message : String(err));
       })
       .finally(() => {
-        if (cancelled) return;
+        if (controller.signal.aborted) return;
         setLoading(false);
         setRefreshing(false);
       });
+  }, []);
 
-    return () => {
-      cancelled = true;
-      controller.abort();
-    };
+  // Fetch on mount and whenever a dependency changes.
+  useEffect(() => {
+    load();
+    return () => controllerRef.current?.abort();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [...deps, tick]);
+  }, [...deps]);
 
-  // Interval scheduler — bumps `tick` so the effect above re-runs.
+  // Interval scheduler — re-runs the shared fetch path.
   useEffect(() => {
     if (intervalMs <= 0) return;
-    const id = setInterval(() => setTick((t) => t + 1), intervalMs);
+    const id = setInterval(load, intervalMs);
     return () => clearInterval(id);
-  }, [intervalMs]);
+  }, [intervalMs, load]);
+
+  const refresh = useCallback(() => load(), [load]);
 
   return {
     data,
