@@ -114,6 +114,7 @@ services:
         create analytics.topn.pages.1m    6
         create analytics.funnel.live      6
         create analytics.alerts           6
+        create analytics.active.sessions  6
         # Reference topics are compacted (KTable sources)
         create ref.products               3 "--config cleanup.policy=compact"
         create ref.campaigns              3 "--config cleanup.policy=compact"

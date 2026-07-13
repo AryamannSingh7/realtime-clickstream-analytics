@@ -40,4 +40,9 @@ public class StreamController {
     public SseEmitter alerts() {
         return broadcaster.subscribe(AnalyticsStreams.ALERTS);
     }
+
+    @GetMapping("/active-sessions")
+    public SseEmitter activeSessions() {
+        return broadcaster.subscribe(AnalyticsStreams.ACTIVE_SESSIONS);
+    }
 }

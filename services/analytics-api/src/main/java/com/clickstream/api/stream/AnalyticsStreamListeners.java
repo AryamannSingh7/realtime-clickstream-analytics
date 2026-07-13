@@ -1,9 +1,11 @@
 package com.clickstream.api.stream;
 
+import com.clickstream.api.stream.StreamDtos.ActiveSessionsView;
 import com.clickstream.api.stream.StreamDtos.AlertView;
 import com.clickstream.api.stream.StreamDtos.FunnelView;
 import com.clickstream.api.stream.StreamDtos.MetricsView;
 import com.clickstream.api.stream.StreamDtos.TopNView;
+import com.clickstream.avro.ActiveSessionsSnapshot;
 import com.clickstream.avro.AnomalyAlert;
 import com.clickstream.avro.FunnelSnapshot;
 import com.clickstream.avro.MinuteMetrics;
@@ -43,5 +45,10 @@ public class AnalyticsStreamListeners {
     @KafkaListener(topics = AnalyticsStreams.ALERTS_TOPIC)
     public void onAlert(AnomalyAlert alert) {
         broadcaster.publish(AnalyticsStreams.ALERTS, AlertView.from(alert));
+    }
+
+    @KafkaListener(topics = AnalyticsStreams.ACTIVE_SESSIONS_TOPIC)
+    public void onActiveSessions(ActiveSessionsSnapshot snapshot) {
+        broadcaster.publish(AnalyticsStreams.ACTIVE_SESSIONS, ActiveSessionsView.from(snapshot));
     }
 }

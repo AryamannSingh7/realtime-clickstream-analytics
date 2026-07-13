@@ -1,5 +1,6 @@
 package com.clickstream.api.stream;
 
+import com.clickstream.avro.ActiveSessionsSnapshot;
 import com.clickstream.avro.AnomalyAlert;
 import com.clickstream.avro.FunnelSnapshot;
 import com.clickstream.avro.MinuteMetrics;
@@ -61,6 +62,14 @@ public final class StreamDtos {
             return new AlertView(a.getAlertTime(), a.getObserved(), a.getBaselineMean(),
                     a.getBaselineStddev(), a.getZScore(), a.getThresholdK(),
                     a.getDirection().toString(), a.getBaselineSamples());
+        }
+    }
+
+    /** Live active-session count — {@code analytics.active.sessions}. */
+    public record ActiveSessionsView(Instant snapshotTime, long activeSessions, long windowSeconds) {
+        public static ActiveSessionsView from(ActiveSessionsSnapshot s) {
+            return new ActiveSessionsView(
+                    s.getSnapshotTime(), s.getActiveSessions(), s.getWindowSeconds());
         }
     }
 }

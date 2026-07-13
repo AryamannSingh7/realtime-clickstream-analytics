@@ -2,10 +2,12 @@ package com.clickstream.api.stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.clickstream.api.stream.StreamDtos.ActiveSessionsView;
 import com.clickstream.api.stream.StreamDtos.AlertView;
 import com.clickstream.api.stream.StreamDtos.FunnelView;
 import com.clickstream.api.stream.StreamDtos.MetricsView;
 import com.clickstream.api.stream.StreamDtos.TopNView;
+import com.clickstream.avro.ActiveSessionsSnapshot;
 import com.clickstream.avro.AnomalyAlert;
 import com.clickstream.avro.FunnelSnapshot;
 import com.clickstream.avro.MinuteMetrics;
@@ -90,5 +92,18 @@ class StreamDtosTest {
         assertThat(v.zScore()).isEqualTo(14.37);
         assertThat(v.direction()).isEqualTo("spike");
         assertThat(v.baselineSamples()).isEqualTo(8);
+    }
+
+    @Test
+    void mapsActiveSessionsSnapshot() {
+        ActiveSessionsSnapshot s = ActiveSessionsSnapshot.newBuilder()
+                .setSnapshotTime(T0).setActiveSessions(4823).setWindowSeconds(1800)
+                .build();
+
+        ActiveSessionsView v = ActiveSessionsView.from(s);
+
+        assertThat(v.snapshotTime()).isEqualTo(T0);
+        assertThat(v.activeSessions()).isEqualTo(4823);
+        assertThat(v.windowSeconds()).isEqualTo(1800);
     }
 }
