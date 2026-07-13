@@ -10,6 +10,7 @@ export const STREAM = {
   topn: "topn",
   funnel: "funnel",
   alerts: "alerts",
+  activeSessions: "active-sessions",
 } as const;
 
 export type StreamKey = (typeof STREAM)[keyof typeof STREAM];
@@ -61,4 +62,11 @@ export interface AlertView {
   thresholdK: number;
   direction: "spike" | "drop";
   baselineSamples: number;
+}
+
+/** Live active-session count — `analytics.active.sessions`. Arrives every ~3s. */
+export interface ActiveSessionsView {
+  snapshotTime: string;
+  activeSessions: number;
+  windowSeconds: number;
 }

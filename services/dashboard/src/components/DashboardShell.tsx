@@ -10,6 +10,7 @@ import { LiveMetricsCard } from "@/components/cards/LiveMetricsCard";
 import { LiveFunnelCard } from "@/components/cards/LiveFunnelCard";
 import { LiveTopPagesCard } from "@/components/cards/LiveTopPagesCard";
 import { AlertsFeedCard } from "@/components/cards/AlertsFeedCard";
+import { LiveStatStrip } from "@/components/live/LiveStatStrip";
 import { RANGE_PRESETS } from "@/lib/range";
 
 function RangeSelector() {
@@ -52,6 +53,8 @@ function LiveSection() {
           Streaming rollups pushed from Kafka Streams over SSE
         </p>
       </div>
+
+      <LiveStatStrip />
 
       {/* Left column carries the two data-dense cards (per-minute chart, ranked
           pages); the right rail stacks the two compact cards (funnel, alerts) —
