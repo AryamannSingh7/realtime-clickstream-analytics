@@ -53,11 +53,14 @@ function LiveSection() {
         </p>
       </div>
 
+      {/* Left column carries the two data-dense cards (per-minute chart, ranked
+          pages); the right rail stacks the two compact cards (funnel, alerts) —
+          the rarely-populated alert feed no longer claims the widest slot. */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <LiveMetricsCard className="lg:col-span-2" />
         <LiveFunnelCard />
-        <LiveTopPagesCard />
-        <AlertsFeedCard className="lg:col-span-2" />
+        <LiveTopPagesCard className="lg:col-span-2" />
+        <AlertsFeedCard />
       </div>
     </section>
   );
