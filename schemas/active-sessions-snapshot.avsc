@@ -1,0 +1,15 @@
+{
+  "type": "record",
+  "name": "ActiveSessionsSnapshot",
+  "namespace": "com.clickstream.avro",
+  "doc": "Live count of currently-active sessions: distinct visitors (anonymous_id) whose most recent event falls within the session inactivity gap of the latest observed event time. Emitted on a wall-clock cadence to analytics.active.sessions.",
+  "fields": [
+    {
+      "name": "snapshot_time",
+      "type": { "type": "long", "logicalType": "timestamp-millis" },
+      "doc": "Wall-clock time this snapshot was emitted."
+    },
+    { "name": "active_sessions", "type": "long", "doc": "Distinct visitors active within the last window_seconds (i.e. with an event newer than latest_event_time - window)." },
+    { "name": "window_seconds", "type": "long", "doc": "Inactivity window that defines 'active', matching the sessionization gap." }
+  ]
+}

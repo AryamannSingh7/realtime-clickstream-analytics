@@ -35,6 +35,9 @@ public final class StreamTopics {
     /** Volume anomaly alerts ({@code AnomalyAlert}), one record per bucket that breaches the EWMA baseline. */
     public static final String ALERTS = "analytics.alerts";
 
+    /** Live count of currently-active sessions ({@code ActiveSessionsSnapshot}), emitted on a wall-clock cadence. */
+    public static final String ACTIVE_SESSIONS = "analytics.active.sessions";
+
     /** Size of the tumbling event-time window every rollup is computed over. */
     public static final Duration WINDOW_SIZE = Duration.ofMinutes(1);
 

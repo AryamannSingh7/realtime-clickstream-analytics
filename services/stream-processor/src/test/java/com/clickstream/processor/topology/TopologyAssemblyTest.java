@@ -1,5 +1,6 @@
 package com.clickstream.processor.topology;
 
+import com.clickstream.avro.ActiveSessionsSnapshot;
 import com.clickstream.avro.AnomalyAlert;
 import com.clickstream.avro.ClickEvent;
 import com.clickstream.avro.EnrichedClickEvent;
@@ -50,6 +51,7 @@ class TopologyAssemblyTest {
                 AvroSerdes.<Product>forValue(SR_URL), AvroSerdes.<EnrichedClickEvent>forValue(SR_URL));
         LiveFunnelTopology.build(builder, source, clickEventSerde, AvroSerdes.<FunnelSnapshot>forValue(SR_URL));
         AnomalyDetectionTopology.build(builder, source, AvroSerdes.<AnomalyAlert>forValue(SR_URL));
+        ActiveSessionsTopology.build(builder, source, AvroSerdes.<ActiveSessionsSnapshot>forValue(SR_URL));
 
         assertThatCode(builder::build).doesNotThrowAnyException();
 
@@ -62,6 +64,7 @@ class TopologyAssemblyTest {
                 .contains(StreamTopics.REF_PRODUCTS)
                 .contains(StreamTopics.ENRICHED_EVENTS)
                 .contains(StreamTopics.FUNNEL_LIVE)
-                .contains(StreamTopics.ALERTS);
+                .contains(StreamTopics.ALERTS)
+                .contains(StreamTopics.ACTIVE_SESSIONS);
     }
 }
