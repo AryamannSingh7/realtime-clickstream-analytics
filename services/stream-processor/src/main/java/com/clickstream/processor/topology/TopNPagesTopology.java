@@ -60,8 +60,13 @@ public final class TopNPagesTopology {
                                 String.valueOf(windowedKey.window().start()),
                                 new PageCount(windowedKey.key(), count)),
                         Named.as("topn-rekey-by-window"))
+                // Single partition: records are keyed by window start, so a window's every path
+                // must land on ONE task for its STREAM_TIME punctuator to advance and flush on time.
+                // Inheriting the source's 6 partitions stalls each task until a window hashes to it
+                // (~every 6th minute) — the "global aggregation is inherently single-partition" lesson.
                 .repartition(Repartitioned.with(Serdes.String(), pageCountSerde)
-                        .withName("topn-window-repartition"))
+                        .withName("topn-window-repartition")
+                        .withNumberOfPartitions(1))
                 .process(
                         () -> new TopNPagesProcessor(
                                 StreamTopics.WINDOW_SIZE.toMillis(),
