@@ -8,6 +8,10 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  *
  * @param eps                 target throughput in events per second
  * @param virtualUsers        size of the pool of concurrent simulated sessions
+ * @param emitterThreads      number of parallel producer threads; the target rate and
+ *                            the session pool are split evenly across them so a single
+ *                            box can drive high-throughput benchmarks (bounded by the
+ *                            pool size)
  * @param topic               destination Kafka topic for raw events
  * @param lateEventRatio      fraction of events [0,1] stamped with a past event_time
  *                            to exercise event-time windowing / lateness handling
@@ -17,6 +21,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 public record GeneratorProperties(
         int eps,
         int virtualUsers,
+        int emitterThreads,
         String topic,
         double lateEventRatio,
         long lateEventMaxDelayMs) {
@@ -27,6 +32,9 @@ public record GeneratorProperties(
         }
         if (virtualUsers < 1) {
             virtualUsers = 1;
+        }
+        if (emitterThreads < 1) {
+            emitterThreads = 1;
         }
         if (topic == null || topic.isBlank()) {
             topic = "clickstream.events.raw";

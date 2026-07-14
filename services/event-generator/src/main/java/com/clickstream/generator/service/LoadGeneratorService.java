@@ -34,6 +34,11 @@ import org.springframework.stereotype.Service;
  * emitting in small batches ({@value #BATCHES_PER_SEC}/s) and parking the remainder
  * of each batch window, which keeps {@code parkNanos} overhead negligible even at
  * thousands of events per second. Rate, pause and resume are adjustable at runtime.
+ *
+ * <p>For high-throughput load tests the work is spread across {@code emitterThreads}
+ * parallel producers: the target rate is divided evenly between them and each thread
+ * owns a disjoint slice of the session pool, so the threads never touch shared mutable
+ * session state (the {@link KafkaTemplate} producer is itself thread-safe and shared).
  */
 @Service
 public class LoadGeneratorService {
@@ -57,7 +62,7 @@ public class LoadGeneratorService {
     private volatile boolean running = false;
 
     private UserSession[] pool;
-    private Thread emitter;
+    private Thread[] emitters;
 
     public LoadGeneratorService(
             GeneratorProperties props,
@@ -90,63 +95,97 @@ public class LoadGeneratorService {
                 .description("Size of the simulated user-session pool")
                 .register(meters);
 
+        // Never spin up more emitter threads than there are pool slots to divide
+        // among them, so every thread owns at least one session.
+        int threads = Math.max(1, Math.min(props.emitterThreads(), pool.length));
+        Gauge.builder("generator.emitter.threads", this, s -> s.emitters.length)
+                .description("Number of parallel emitter threads")
+                .register(meters);
+
         running = true;
-        emitter = new Thread(this::runLoop, "event-emitter");
-        emitter.setDaemon(true);
-        emitter.start();
-        log.info("Event generator started: targetEps={}, virtualUsers={}, topic={}",
-                targetEps, pool.length, props.topic());
+        emitters = new Thread[threads];
+        for (int t = 0; t < threads; t++) {
+            int per = pool.length / threads;
+            int rem = pool.length % threads;
+            int start = t * per + Math.min(t, rem);
+            int end = start + per + (t < rem ? 1 : 0);
+            int threadIndex = t;
+            Thread emitter = new Thread(
+                    () -> runLoop(start, end, threadIndex, threads), "event-emitter-" + t);
+            emitter.setDaemon(true);
+            emitters[t] = emitter;
+            emitter.start();
+        }
+        log.info("Event generator started: targetEps={}, virtualUsers={}, emitterThreads={}, topic={}",
+                targetEps, pool.length, threads, props.topic());
     }
 
     @PreDestroy
     void stop() {
         running = false;
-        if (emitter != null) {
-            emitter.interrupt();
+        if (emitters != null) {
+            for (Thread emitter : emitters) {
+                emitter.interrupt();
+            }
         }
         log.info("Event generator stopped after producing {} events ({} send errors)",
                 totalProduced.get(), sendErrors.get());
     }
 
-    private void runLoop() {
-        // Deficit-based pacing: each wake-up emits however many events the target rate
-        // says we owe since a baseline. This self-corrects for coarse OS timers (notably
-        // Windows' ~15ms tick, which makes a fixed per-batch park undershoot badly) so the
-        // average throughput tracks the target. The baseline is rebased on pause/resume and
-        // whenever the rate changes, so neither inflates a catch-up burst.
+    /**
+     * Rate-paced emit loop for one emitter thread, driving the pool slice
+     * {@code [start, end)} at this thread's share of the global target rate.
+     */
+    private void runLoop(int start, int end, int threadIndex, int numThreads) {
+        // Deficit-based pacing: each wake-up emits however many events this thread's share
+        // of the target rate says it owes since a baseline. This self-corrects for coarse OS
+        // timers (notably Windows' ~15ms tick, which makes a fixed per-batch park undershoot
+        // badly) so the average throughput tracks the target. The baseline is rebased on
+        // pause/resume and whenever the rate changes, so neither inflates a catch-up burst.
+        // Pacing uses a thread-local produced count (not the shared total) so each thread
+        // meters its own slice independently.
         long baseNanos = System.nanoTime();
-        long baseCount = totalProduced.get();
-        int pacedEps = targetEps;
+        long produced = 0;
+        long baseCount = 0;
+        int pacedTarget = targetEps;
+        int myEps = perThreadEps(pacedTarget, numThreads, threadIndex);
 
         while (running) {
             if (paused) {
                 LockSupport.parkNanos(BATCH_INTERVAL_NANOS);
                 baseNanos = System.nanoTime();
-                baseCount = totalProduced.get();
+                baseCount = produced;
                 continue;
             }
-            if (targetEps != pacedEps) {
-                pacedEps = targetEps;
+            if (targetEps != pacedTarget) {
+                pacedTarget = targetEps;
+                myEps = perThreadEps(pacedTarget, numThreads, threadIndex);
                 baseNanos = System.nanoTime();
-                baseCount = totalProduced.get();
+                baseCount = produced;
             }
 
             double elapsedSec = (System.nanoTime() - baseNanos) / 1_000_000_000.0;
-            long shouldHave = (long) (elapsedSec * pacedEps);
-            long deficit = shouldHave - (totalProduced.get() - baseCount);
+            long shouldHave = (long) (elapsedSec * myEps);
+            long deficit = shouldHave - (produced - baseCount);
             // Cap a single wake-up's burst at one second of events so a long GC pause or
             // a stalled broker can't trigger an unbounded flood once things recover.
-            long burst = Math.min(Math.max(deficit, 0L), pacedEps);
-            for (long i = 0; i < burst && running && !paused && targetEps == pacedEps; i++) {
-                emitOne();
+            long burst = Math.min(Math.max(deficit, 0L), Math.max(myEps, 1));
+            for (long i = 0; i < burst && running && !paused && targetEps == pacedTarget; i++) {
+                emitOne(start, end);
+                produced++;
             }
             LockSupport.parkNanos(BATCH_INTERVAL_NANOS);
         }
     }
 
-    private void emitOne() {
+    /** This thread's whole-number share of {@code totalEps}, distributing the remainder. */
+    static int perThreadEps(int totalEps, int numThreads, int threadIndex) {
+        return totalEps / numThreads + (threadIndex < totalEps % numThreads ? 1 : 0);
+    }
+
+    private void emitOne(int start, int end) {
         ThreadLocalRandom rnd = ThreadLocalRandom.current();
-        int idx = rnd.nextInt(pool.length);
+        int idx = start + rnd.nextInt(end - start);
         UserSession session = pool[idx];
         EventTemplate template = session.nextTemplate();
         if (template == null) {
@@ -245,6 +284,10 @@ public class LoadGeneratorService {
 
     public int getVirtualUsers() {
         return pool != null ? pool.length : 0;
+    }
+
+    public int getEmitterThreads() {
+        return emitters != null ? emitters.length : 0;
     }
 
     public String getTopic() {

@@ -17,14 +17,19 @@ spring:
       properties:
         schema.registry.url: ${SCHEMA_REGISTRY_URL:http://localhost:8081}
         auto.register.schemas: true
-        # Throughput-oriented batching for a high-volume single producer.
+        # Throughput-oriented batching for a high-volume producer shared across the
+        # emitter threads. Extra buffer headroom keeps sends from blocking under the
+        # transient backpressure of a benchmark ramp.
         linger.ms: 20
         batch.size: 65536
+        buffer.memory: 67108864
         compression.type: lz4
 
 generator:
   eps: 200
   virtual-users: 500
+  # Parallel producer threads; override with GENERATOR_EMITTER_THREADS for load tests.
+  emitter-threads: 4
   topic: clickstream.events.raw
   ref-products-topic: ref.products
   late-event-ratio: 0.05
