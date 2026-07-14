@@ -5,7 +5,9 @@
 #   require curl jq
 #
 # Endpoints default to a local `docker compose up` stack; override via env vars.
-# Requires: curl, jq (both standard; jq parses the Actuator/JSON responses).
+# Requires: curl only. Responses are parsed with sed/awk (ClickHouse HTTP returns
+# raw values; service metrics are read from the plain-text Prometheus endpoint), so
+# no jq is needed.
 
 GENERATOR_URL="${GENERATOR_URL:-http://localhost:8089}"
 ANALYTICS_API_URL="${ANALYTICS_API_URL:-http://localhost:8091}"
@@ -31,20 +33,17 @@ gen_ramp()     { curl -fsS -X POST "$GENERATOR_URL/api/generator/ramp?from=$1&to
 gen_burst()    { curl -fsS -X POST "$GENERATOR_URL/api/generator/burst?eps=$1&durationSec=$2" >/dev/null; }
 gen_pause()    { curl -fsS -X POST "$GENERATOR_URL/api/generator/pause" >/dev/null; }
 gen_resume()   { curl -fsS -X POST "$GENERATOR_URL/api/generator/resume" >/dev/null; }
-gen_produced() { gen_status | jq -r '.totalProduced'; }
-gen_target()   { gen_status | jq -r '.targetEps'; }
+gen_produced() { gen_status | sed -n 's/.*"totalProduced":\([0-9]*\).*/\1/p'; }
+gen_target()   { gen_status | sed -n 's/.*"targetEps":\([0-9]*\).*/\1/p'; }
 
-# Read one Actuator metric's aggregate value:  metric <base-url> <name> [statistic]
-# e.g.  metric "$GENERATOR_URL" generator.events.produced COUNT
-metric() {
-  local base="$1" name="$2" stat="${3:-}" url query
-  url="$base/actuator/metrics/$name"
-  query="$(curl -fsS "$url")" || { echo "error: no metric '$name' at $base" >&2; return 1; }
-  if [ -n "$stat" ]; then
-    echo "$query" | jq -r --arg s "$stat" '.measurements[] | select(.statistic==$s) | .value'
-  else
-    echo "$query" | jq -r '.measurements[0].value'
-  fi
+# Sum a Prometheus counter/gauge across all its label combinations:
+#   prom_metric <base-url> <prometheus_metric_name>
+# e.g.  prom_metric "$GENERATOR_URL" generator_events_produced_total
+#       prom_metric "$STREAM_URL"    stream_events_consumed_total
+# (Micrometer maps `generator.events.produced` -> `generator_events_produced_total`.)
+prom_metric() {
+  curl -fsS "$1/actuator/prometheus" \
+    | awk -v m="^$2([ {])" '$0 ~ m {s += $NF} END { printf "%.0f\n", s + 0 }'
 }
 
 # Run a ClickHouse SQL query over HTTP and print the raw result.

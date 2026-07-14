@@ -6,7 +6,7 @@ methodology are written up in [`../docs/benchmarks.md`](../docs/benchmarks.md).
 ## Prerequisites
 
 - The full stack running: `docker compose up -d` (wait ~1–2 min for data to flow).
-- `curl` and `jq` on your `PATH`.
+- `curl` on your `PATH`. (No `jq` needed — responses are parsed with `sed`/`awk`.)
 
 Endpoints default to the local compose stack and can be overridden with env vars:
 `GENERATOR_URL` (`:8089`), `STREAM_URL` (`:8090`), `ANALYTICS_API_URL` (`:8091`),
@@ -30,15 +30,16 @@ the rate higher on a multi-core box.
 ## `lib.sh`
 
 Sourced helpers shared by every bench script: generator control (`gen_rate`, `gen_ramp`,
-`gen_burst`, `gen_produced`), Actuator metric reads (`metric <base> <name> [statistic]`),
-and ClickHouse HTTP queries (`ch_query "<sql>"`).
+`gen_burst`, `gen_produced`), Prometheus metric reads (`prom_metric <base> <name>`), and
+ClickHouse HTTP queries (`ch_query "<sql>"`).
 
 ## Roadmap
 
 This directory is built up across M7:
 
 - **M7.1 (done)** — load harness: server-side ramp/burst profiles + `drive-load.sh`.
-- **M7.2** — throughput, end-to-end latency (produced→visible), and consumer-lag capture.
+- **M7.2 (done)** — `capture-throughput.sh`, `capture-latency.sh`, `capture-lag.sh`;
+  results in [`../docs/benchmarks.md`](../docs/benchmarks.md).
 - **M7.3** — ClickHouse query latency (`windowFunnel`/aggregation) over 10M+ rows.
 - **M7.4** — horizontal scaling: throughput vs 1/2/3 Streams instances + rebalancing.
 

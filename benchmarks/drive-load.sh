@@ -11,7 +11,7 @@
 # SAMPLE_SECONDS (default 5). Requires the stack to be up (docker compose up).
 set -euo pipefail
 source "$(dirname "$0")/lib.sh"
-require curl jq
+require curl
 
 SAMPLE_SECONDS="${SAMPLE_SECONDS:-5}"
 
