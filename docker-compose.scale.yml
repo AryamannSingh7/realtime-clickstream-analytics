@@ -1,0 +1,16 @@
+# Horizontal-scaling override for the stream-processor (M7.4 benchmark).
+#
+# The base service pins a container_name and the 8090 host port, both of which prevent
+# running more than one replica. This override clears them so the stream-processor can be
+# scaled to N replicas that all join the same Kafka Streams consumer group
+# (application.id = clickstream-stream-processor) and rebalance the source partitions
+# between them.
+#
+#   docker compose -f docker-compose.yml -f docker-compose.scale.yml \
+#       up -d --no-deps --scale stream-processor=3 stream-processor
+#
+# (Requires Docker Compose >= 2.24 for the !reset tag.)
+services:
+  stream-processor:
+    container_name: !reset null
+    ports: !reset null
