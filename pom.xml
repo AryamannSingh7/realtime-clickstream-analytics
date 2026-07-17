@@ -28,6 +28,10 @@
         <confluent.version>7.8.0</confluent.version>
         <kafka.version>3.8.1</kafka.version>
         <clickhouse-jdbc.version>0.7.2</clickhouse-jdbc.version>
+
+        <!-- Integration-test tooling (activated by the `integration-tests` profile). -->
+        <testcontainers.version>1.21.4</testcontainers.version>
+        <maven-failsafe-plugin.version>3.5.2</maven-failsafe-plugin.version>
     </properties>
 
     <dependencyManagement>
@@ -37,6 +41,15 @@
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-dependencies</artifactId>
                 <version>${spring-boot.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
+            <!-- Testcontainers BOM: aligns testcontainers, junit-jupiter, kafka, clickhouse. -->
+            <dependency>
+                <groupId>org.testcontainers</groupId>
+                <artifactId>testcontainers-bom</artifactId>
+                <version>${testcontainers.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -86,6 +99,42 @@
             </plugins>
         </pluginManagement>
     </build>
+
+    <profiles>
+        <!-- Integration tests (Testcontainers) are opt-in: they need a Docker engine, so the
+             default `mvn verify` stays fast and unit-only. Activate with `-Pintegration-tests`
+             (a dedicated CI job does this). Failsafe runs the `*IT.java` classes at `verify`;
+             Surefire keeps running the `*Test.java` unit classes on every build.
+             Defined here in the parent so every module inherits it. -->
+        <profile>
+            <id>integration-tests</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-failsafe-plugin</artifactId>
+                        <version>${maven-failsafe-plugin.version}</version>
+                        <configuration>
+                            <!-- Test against the exploded classes, not the module's own artifact.
+                                 spring-boot:repackage (package phase) rewrites <module>.jar into a
+                                 fat jar with classes under BOOT-INF/classes/; if Failsafe put that
+                                 on the test classpath the app's own classes would be invisible
+                                 (NoClassDefFoundError). -->
+                            <classesDirectory>${project.build.outputDirectory}</classesDirectory>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <goals>
+                                    <goal>integration-test</goal>
+                                    <goal>verify</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 
     <repositories>
         <!-- Confluent public Maven repo (free) for Avro serializers / Schema Registry client -->
