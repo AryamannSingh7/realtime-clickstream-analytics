@@ -92,12 +92,70 @@ after the arrival rate dropped back to 500 eps — while the sink, an independen
 group, had already drained to < 8,000. That asymmetry is expected: rebuilding suppressed
 windows and repartitioned state is inherently heavier than a stateless row insert.
 
+### OLAP query latency (10M rows)
+
+_Captured 2026-07-17. Dataset: **10,000,000** synthetic events, **~1.0M distinct visitors**,
+213 MiB on disk (`analytics.events_bench`). Latency is ClickHouse **engine time**
+(`query_duration_ms` from `system.query_log`, so HTTP/JDBC overhead is excluded), memory
+capped at 4 GB/query. Cold = mark + uncompressed caches dropped; warm = median of 5 runs._
+
+| query (the analytics-api OLAP endpoint it backs) | rows scanned | cold | warm (median) | warm min–max |
+|---|---|---|---|---|
+| funnel — `windowFunnel`, GROUP BY visitor | 10.0M | 794 ms | **708 ms** | 616–740 ms |
+| unique visitors — `uniqCombined`, hourly | 10.0M | 85 ms | **85 ms** | 80–125 ms |
+| event timeseries — count by hour + type | 10.0M | 47 ms | **46 ms** | 42–48 ms |
+| top pages — `page_view` count by path | 4.1M | 18 ms | **18 ms** | 17–19 ms |
+| retention — `retention()`, two buckets | 10.0M | 351 ms | **325 ms** | 317–371 ms |
+
+Every query the dashboard's OLAP side serves stays **sub-second over 10M rows** on this laptop.
+`windowFunnel` is the heaviest (~0.7s) because it groups every one of ~1M visitors and walks their
+event sequence; the plain aggregations land in tens of milliseconds. Top-pages scans only 4.1M rows
+(not 10M) because the table's `ORDER BY (event_type, event_time, anonymous_id)` lets ClickHouse prune
+straight to the `page_view` rows. Cold vs warm barely differ — these are full-column scans, so the OS
+page cache dominates and ClickHouse's own caches add little. (These are the ad-hoc OLAP path; the live
+dashboard tiles are served from the streaming SSE side, never from a 10M-row scan.)
+
+### Horizontal scaling (stream-processor, 1 / 2 / 3 instances)
+
+_Captured 2026-07-17. The stream-processor is scaled with `docker-compose.scale.yml` (which
+clears the fixed container name + host port so replicas can join the same
+`application.id = clickstream-stream-processor` group). Load is driven deliberately over the
+ceiling at 30k eps; `capture-scaling.sh` reports the group's aggregate source-consumption rate
+(committed-offset delta on `clickstream.events.raw` over a 30s window) after warmup._
+
+| instances | sustained consume (eps) | source-partition spread |
+|---|---|---|
+| 1 | ~20,000 | all 6 partitions on the one instance |
+| 2 | ~15,700 | 6 kept together (warm stateful tasks not moved) |
+| 3 | ~16,500 | 5 + 1 across two instances |
+
+**Finding: on a single machine, adding stream-processor instances does not raise throughput** —
+it stays pinned at the **~15–20k core-bound ceiling** from the throughput section. Every replica
+competes for the same 16 threads, so there is no extra compute to exploit; the
+rebalance / state-restore / coordination overhead only adds variance (and can transiently *lower*
+throughput while a fresh instance restores its RocksDB state under load — the lag kept growing in
+all three runs because 30k is over the ceiling). The mechanism itself works: the consumer group
+grows to N members and Kafka Streams redistributes work, with source partitions spreading across
+instances (5 + 1 at three instances). It balances whole **tasks**, not raw partitions, and its
+high-availability assignor keeps warm stateful tasks put rather than pay a restore cost — so on one
+box the six stateful source tasks tend to stay co-located. The topology is horizontally scalable by
+construction (shared-nothing, coordinated purely through the Kafka consumer group under EOS-v2);
+realizing an actual throughput *gain* needs **more nodes**, which a single laptop cannot provide.
+This is the same conclusion as the throughput ceiling: the bound is stateful EOS processing plus the
+sink competing for cores, not the code.
+
 ## Reproducing
 
 ```bash
 docker compose up -d            # wait ~1–2 min for data to flow
 cd benchmarks
-./capture-throughput.sh 10000 60   # sustained-rate sweep
-./capture-latency.sh 60            # ingest-path latency
-./capture-lag.sh                   # consumer-group backlog
+./capture-throughput.sh 10000 60      # sustained-rate sweep
+./capture-latency.sh 60               # ingest-path latency
+./capture-lag.sh                      # consumer-group backlog
+./capture-query-latency.sh 10000000 5 # OLAP query latency over 10M rows
+
+# Horizontal scaling: scale the stream-processor, then measure the group throughput.
+docker compose -f docker-compose.yml -f docker-compose.scale.yml \
+    up -d --no-deps --scale stream-processor=3 stream-processor
+./capture-scaling.sh 30000 30
 ```
