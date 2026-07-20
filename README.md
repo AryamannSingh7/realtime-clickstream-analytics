@@ -4,7 +4,13 @@
 
 A production-minded, end-to-end **real-time analytics pipeline** that ingests a high-volume clickstream, processes it with **stateful, windowed stream operations**, stores results in a **columnar OLAP store**, and surfaces them on a **live dashboard** — all containerized and runnable with a single command.
 
-> **Status:** ✅ Feature-complete (M0–M7). The full pipeline runs end-to-end from one
+![Live dashboard — streaming rollups pushed from Kafka Streams over SSE](docs/demo.gif)
+
+*Unedited capture at ~1,500 events/sec. Gauges and the live funnel update every 3s off the
+SSE stream; the per-minute panel refreshes as each tumbling window closes — note the sparkline
+gaining a point and the top-pages ranking reordering mid-clip.*
+
+> **Status:** ✅ Feature-complete (P0–P8). The full pipeline runs end-to-end from one
 > `docker compose up`; performance is measured and written up in
 > [`docs/benchmarks.md`](docs/benchmarks.md).
 
@@ -80,15 +86,15 @@ Everything in the stack is **free and open-source** — no paid services require
 
 ## Roadmap
 
-- [x] **M0** — Scaffolding & infra (Kafka, Schema Registry, ClickHouse via Docker Compose)
-- [x] **M1** — Ingestion: realistic event generator → Kafka → ClickHouse (Kafka Connect sink)
-- [x] **M2** — Streaming core: per-minute metrics + windowed top-N
-- [x] **M3** — Sessionization + conversion funnel + enrichment joins
-- [x] **M4** — Stateful anomaly / spike detection
-- [x] **M5** — Serving API (SSE live feeds + ClickHouse OLAP endpoints)
-- [x] **M6** — Live Next.js dashboard
-- [x] **M7** — Load harness & benchmarks (throughput / latency / lag / OLAP / scaling)
-- [ ] **M8** — Polish: docs, architecture diagram, integration tests, CI, demo recording
+- [x] **P0** — Scaffolding & infra (Kafka, Schema Registry, ClickHouse via Docker Compose)
+- [x] **P1** — Ingestion: realistic event generator → Kafka → ClickHouse (Kafka Connect sink)
+- [x] **P2** — Streaming core: per-minute metrics + windowed top-N
+- [x] **P3** — Sessionization + conversion funnel + enrichment joins
+- [x] **P4** — Stateful anomaly / spike detection
+- [x] **P5** — Serving API (SSE live feeds + ClickHouse OLAP endpoints)
+- [x] **P6** — Live Next.js dashboard
+- [x] **P7** — Load harness & benchmarks (throughput / latency / lag / OLAP / scaling)
+- [x] **P8** — Polish: docs, architecture diagram, integration tests, CI, demo recording
 
 ## Getting started
 
