@@ -33,15 +33,27 @@ Sourced helpers shared by every bench script: generator control (`gen_rate`, `ge
 `gen_burst`, `gen_produced`), Prometheus metric reads (`prom_metric <base> <name>`), and
 ClickHouse HTTP queries (`ch_query "<sql>"`).
 
-## Roadmap
+## Capture scripts
 
-This directory is built up across M7:
+All of M7 is complete; every figure below is written up with methodology and a hardware
+disclosure in [`../docs/benchmarks.md`](../docs/benchmarks.md).
 
-- **M7.1 (done)** — load harness: server-side ramp/burst profiles + `drive-load.sh`.
-- **M7.2 (done)** — `capture-throughput.sh`, `capture-latency.sh`, `capture-lag.sh`;
-  results in [`../docs/benchmarks.md`](../docs/benchmarks.md).
-- **M7.3** — ClickHouse query latency (`windowFunnel`/aggregation) over 10M+ rows.
-- **M7.4** — horizontal scaling: throughput vs 1/2/3 Streams instances + rebalancing.
+| Script | Measures |
+|---|---|
+| `capture-throughput.sh <eps> <dur>` | Sustained rate at three stages: produced → consumed → ingested |
+| `capture-latency.sh <dur>` | Ingest-path latency (`ingested_at − event_time`) percentiles |
+| `capture-lag.sh` | Consumer-group backlog for the Streams app and the ClickHouse sink |
+| `capture-query-latency.sh <rows> <runs>` | ClickHouse OLAP engine time (cold vs warm) over an N-row dataset |
+| `capture-scaling.sh <eps> <dur>` | Aggregate group throughput vs 1/2/3 stream-processor instances |
+
+Scaling runs need the scale overlay, which clears the fixed container name and host port so
+replicas can join the same consumer group:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.scale.yml \
+    up -d --no-deps --scale stream-processor=3 stream-processor
+./capture-scaling.sh 30000 30
+```
 
 Captured results land under `results/` (git-ignored) and are summarised in
-`docs/benchmarks.md` with a hardware disclosure.
+`docs/benchmarks.md`.
