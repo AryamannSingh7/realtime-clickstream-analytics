@@ -80,7 +80,7 @@ choice is in the [ADRs](docs/decisions/).
 | Serving | **Spring Boot** (SSE + ClickHouse queries) | Live push to the UI + OLAP API |
 | Dashboard | **Next.js + React** | Live-updating analytics views |
 | Infra | **Docker Compose** | One-command, fully reproducible local stack |
-| CI | **GitHub Actions** | Build, unit + integration tests (Testcontainers) |
+| CI | **GitHub Actions** | Build, unit + integration tests (Testcontainers), dashboard lint/build, compose validation |
 
 Everything in the stack is **free and open-source** — no paid services required to run it.
 

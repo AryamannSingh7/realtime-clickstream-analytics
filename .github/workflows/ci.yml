@@ -12,10 +12,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up JDK 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
@@ -30,10 +30,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up JDK 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
@@ -43,3 +43,55 @@ jobs:
       # Kafka + Schema Registry and ClickHouse for the *IT tests (Failsafe, verify phase).
       - name: Verify with integration tests
         run: ./mvnw -B -ntp verify -Pintegration-tests
+
+  dashboard:
+    name: Dashboard (lint & build)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/dashboard
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up Node 22
+        uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: services/dashboard/package-lock.json
+
+      # The dashboard is not a Maven module, so the Java jobs never touch it —
+      # without this job a broken lint or a type error would only surface at
+      # `docker compose up --build`.
+      - name: Install
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build
+        run: npm run build
+        env:
+          NEXT_TELEMETRY_DISABLED: '1'
+
+  compose-config:
+    name: Compose config validation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      # Parses and interpolates every compose file and fails on unknown keys,
+      # bad YAML or broken variable references. Deliberately does NOT build or
+      # start the stack: the five service images each run a full Maven/Next
+      # build, which would take ~30 min and risks exhausting a free runner's
+      # disk. Catches compose-level breakage cheaply; the real end-to-end path
+      # is covered by the Testcontainers job above.
+      - name: Validate docker-compose.yml
+        run: docker compose -f docker-compose.yml config -q
+
+      - name: Validate scaling overlay
+        run: |
+          docker compose -f docker-compose.yml \
+                         -f docker-compose.scale.yml config -q
